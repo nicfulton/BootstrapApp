@@ -1,6 +1,6 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
-import { userPoolId } from "./frontendauth"
+import { userPool} from "./frontendauth"
 
 // Create DynamoDB table
 const table = new aws.dynamodb.Table("app-table", {
@@ -148,15 +148,11 @@ const createIntegration = new aws.apigateway.Integration("create-integration", {
     integrationHttpMethod: "POST",
     type: "AWS_PROXY",
     uri: createItemFunction.invokeArn,
-});
+},{
+    dependsOn: [itemsResource]
+}
+);
 
-const createMethod = new aws.apigateway.Method("create-method", {
-    restApi: api.id,
-    resourceId: itemsResource.id,
-    httpMethod: "POST",
-    authorization: "COGNITO_USER_POOLS",
-    authorizerId: userPoolId, // Reference to your Cognito User Pool
-});
 
 // GET /items/{id}
 const itemResource = new aws.apigateway.Resource("item", {
@@ -172,35 +168,10 @@ const getIntegration = new aws.apigateway.Integration("get-integration", {
     integrationHttpMethod: "POST",
     type: "AWS_PROXY",
     uri: getItemFunction.invokeArn,
+},{
+    dependsOn: [itemResource]
 });
 
-const getMethod = new aws.apigateway.Method("get-method", {
-    restApi: api.id,
-    resourceId: itemResource.id,
-    httpMethod: "GET",
-    authorization: "COGNITO_USER_POOLS",
-    authorizerId: userPoolId,
-});
-
-// PUT /items/{id}
-const updateIntegration = new aws.apigateway.Integration("update-integration", {
-    restApi: api.id,
-    resourceId: itemResource.id,
-    httpMethod: "PUT",
-    integrationHttpMethod: "POST",
-    type: "AWS_PROXY",
-    uri: updateItemFunction.invokeArn,
-});
-
-const updateMethod = new aws.apigateway.Method("update-method", {
-    restApi: api.id,
-    resourceId: itemResource.id,
-    httpMethod: "PUT",
-    authorization: "COGNITO_USER_POOLS",
-    authorizerId: userPoolId,
-});
-
-// DELETE /items/{id}
 const deleteIntegration = new aws.apigateway.Integration("delete-integration", {
     restApi: api.id,
     resourceId: itemResource.id,
@@ -208,6 +179,72 @@ const deleteIntegration = new aws.apigateway.Integration("delete-integration", {
     integrationHttpMethod: "POST",
     type: "AWS_PROXY",
     uri: deleteItemFunction.invokeArn,
+},{
+    dependsOn: [itemResource]
+});
+
+
+const putIntegration = new aws.apigateway.Integration("put-integration", {
+    restApi: api.id,
+    resourceId: itemResource.id,
+    httpMethod: "PUT",
+    integrationHttpMethod: "POST",
+    type: "AWS_PROXY",
+    uri: createItemFunction.invokeArn,
+},{
+    dependsOn: [itemResource]
+});
+
+// Create the authorizer for the API Gateway
+const apiAuthorizer = new aws.apigateway.Authorizer("api-authorizer", {
+    restApi: api.id,
+    name: "cognito-authorizer",
+    type: "COGNITO_USER_POOLS",
+    identitySource: "method.request.header.Authorization",
+    providerArns: [userPool.arn],
+});
+
+// Update your API methods to use the authorizer
+const createMethod = new aws.apigateway.Method("create-method", {
+    restApi: api.id,
+    resourceId: itemsResource.id,
+    httpMethod: "POST",
+    authorization: "COGNITO_USER_POOLS",
+    authorizerId: apiAuthorizer.id,
+    authorizationScopes: [
+        "aws.cognito.signin.user.admin"
+    ],
+    requestParameters: {
+        "method.request.header.Authorization": true
+    }
+});
+
+const getMethod = new aws.apigateway.Method("get-method", {
+    restApi: api.id,
+    resourceId: itemResource.id,
+    httpMethod: "GET",
+    authorization: "COGNITO_USER_POOLS",
+    authorizerId: apiAuthorizer.id,
+    authorizationScopes: [
+        "aws.cognito.signin.user.admin"
+    ],
+    requestParameters: {
+        "method.request.header.Authorization": true
+    }
+});
+
+const updateMethod = new aws.apigateway.Method("update-method", {
+    restApi: api.id,
+    resourceId: itemResource.id,
+    httpMethod: "PUT",
+    authorization: "COGNITO_USER_POOLS",
+    authorizerId: apiAuthorizer.id,
+    authorizationScopes: [
+        "aws.cognito.signin.user.admin"
+    ],
+    requestParameters: {
+        "method.request.header.Authorization": true
+    }
 });
 
 const deleteMethod = new aws.apigateway.Method("delete-method", {
@@ -215,25 +252,94 @@ const deleteMethod = new aws.apigateway.Method("delete-method", {
     resourceId: itemResource.id,
     httpMethod: "DELETE",
     authorization: "COGNITO_USER_POOLS",
-    authorizerId: userPoolId,
+    authorizerId: apiAuthorizer.id,
+    authorizationScopes: [
+        "aws.cognito.signin.user.admin"
+    ],
+    requestParameters: {
+        "method.request.header.Authorization": true
+    }
 });
 
-// Enable CORS
+// Update CORS options to include Authorization header
 const corsOptions = new aws.apigateway.Method("cors-options", {
     restApi: api.id,
     resourceId: itemResource.id,
     httpMethod: "OPTIONS",
     authorization: "NONE",
     requestParameters: {
+        "method.request.header.Access-Control-Allow-Headers": true,
+        "method.request.header.Access-Control-Allow-Methods": true,
+        "method.request.header.Access-Control-Allow-Origin": true,
+    },
+});
+
+// Add CORS integration response
+const corsIntegration = new aws.apigateway.Integration("cors-integration", {
+    restApi: api.id,
+    resourceId: itemResource.id,
+    httpMethod: "OPTIONS",
+    type: "MOCK",
+    requestTemplates: {
+        "application/json": `{"statusCode": 200}`
+    },
+},{
+    dependsOn: [itemsResource]
+});
+
+const corsMethodResponse = new aws.apigateway.MethodResponse("cors-method-response", {
+    restApi: api.id,
+    resourceId: itemResource.id,
+    httpMethod: "OPTIONS",
+    statusCode: "200",
+    responseParameters: {
         "method.response.header.Access-Control-Allow-Headers": true,
         "method.response.header.Access-Control-Allow-Methods": true,
         "method.response.header.Access-Control-Allow-Origin": true,
     },
+    responseModels: {
+        "application/json": "Empty",
+    },
+});
+
+const corsIntegrationResponse = new aws.apigateway.IntegrationResponse("cors-integration-response", {
+    restApi: api.id,
+    resourceId: itemResource.id,
+    httpMethod: "OPTIONS",
+    statusCode: "200",
+    responseParameters: {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+    },
+    responseTemplates: {
+        "application/json": "",
+    },
+},{
+    dependsOn: [itemsResource]
 });
 
 // Deploy the API
 const deployment = new aws.apigateway.Deployment("api-deployment", {
-    restApi: api.id,
+    restApi: api.id,},{
+    dependsOn:[
+        createMethod,
+        getMethod,
+        updateMethod,
+        deleteMethod,
+        corsOptions,
+        corsIntegration,
+        corsMethodResponse,
+        corsIntegrationResponse,
+        createIntegration,
+        getIntegration,
+        deleteIntegration,
+        putIntegration,
+        createItemFunction,
+        getItemFunction,
+        updateItemFunction,
+        deleteItemFunction
+    ],
 });
 
 const stage = new aws.apigateway.Stage("api-stage", {

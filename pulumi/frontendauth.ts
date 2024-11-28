@@ -7,7 +7,7 @@ let config = new pulumi.Config();
 let github = config.requireSecret("GITHUB_ACCESS_TOKEN")
 
 // Create Cognito User Pool
-const userPool = new aws.cognito.UserPool("app-user-pool", {
+export const userPool = new aws.cognito.UserPool("app-user-pool", {
     name: "app-user-pool",
     passwordPolicy: {
         minimumLength: 8,
