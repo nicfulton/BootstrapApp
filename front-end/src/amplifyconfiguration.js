@@ -10,4 +10,6 @@ const amplifyConfig = {
     }
 };
 
+console.log(amplifyConfig);
+
 export default amplifyConfig;

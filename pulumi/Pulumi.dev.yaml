@@ -1,2 +1,4 @@
 config:
+  BootstrapApp:GITHUB_ACCESS_TOKEN:
+    secure: AAABAPuktDTs5p8qD+A7r7+tXtfCtZJ11AVL9n5Pyk7BprkQyVUu2TJtqkqtjyokh+umNV/fu1E2eQ/NLykDSGmrSPhQyPW1
   aws:region: ap-southeast-2
