@@ -1,10 +1,5 @@
-
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
-import * as awsx from "@pulumi/awsx";
-
-let config = new pulumi.Config();
-let github = config.requireSecret("GITHUB_ACCESS_TOKEN")
 
 // Create Cognito User Pool
 export const userPool = new aws.cognito.UserPool("app-user-pool", {
@@ -157,78 +152,3 @@ new aws.cognito.IdentityPoolRoleAttachment("identity-pool-role-attachment", {
         authenticated: authenticatedRole.arn,
     },
 });
-
-// Create an AWS resource (S3 Bucket)
-const bucket = new aws.s3.BucketV2("my-bucket");
-
-console.log("GIIHUB", github);
-
-// Create a new Amplify app
-const app = new aws.amplify.App("react-app", {
-    name: "react-application",
-    repository: "https://github.com/nicfulton/BootstrapApp",
-//    accessToken: process.env.GITHUB_ACCESS_TOKEN,
-    accessToken: github,
-    enableAutoBranchCreation: true,
-    enableBranchAutoBuild: true,
-    buildSpec: `version: 1
-applications:
-  - appRoot: 'front-end/src'
-    frontend:
-      phases:
-        preBuild:
-          commands:
-            - npm install
-        build:
-          commands:
-            - npm run build
-      artifacts:
-        baseDirectory: '../build'
-        files:
-          - '**/*'
-      cache:
-        paths:
-          - '../node_modules/**/*'`
-      ,
-    environmentVariables: {
-        AMPLIFY_MONOREPO_APP_ROOT: "front-end/src",
-        NODE_ENV: "development",
-        // Add Cognito configuration
-        REACT_APP_USER_POOL_ID: userPool.id,
-        REACT_APP_USER_POOL_CLIENT_ID: userPoolClient.id,
-        REACT_APP_IDENTITY_POOL_ID: identityPool.id,
-        REACT_APP_AWS_REGION: process.env.AWS_REGION || "ap-southeast-2",
-    },
-});
-
-
-// Create a branch
-const branch = new aws.amplify.Branch("master", {
-    appId: app.id,
-    branchName: "master",
-    framework: "React",
-    stage: "PRODUCTION",
-    enableAutoBuild: true,
-});
-
-if(false){
-// Create domain association if you have a custom domain
-const domain = new aws.amplify.DomainAssociation("domain", {
-    appId: app.id,
-    domainName: "yourdomain.com",
-    subDomains: [{
-        branchName: branch.branchName,
-        prefix: "",
-    }],
-});
-}
-
-// Export important values
-export const bucketName = bucket.id;
-export const defaultDomain = app.defaultDomain;
-export const appId = app.id;
-export const userPoolId = userPool.id;
-export const userPoolClientId = userPoolClient.id;
-export const identityPoolId = identityPool.id;
-
-

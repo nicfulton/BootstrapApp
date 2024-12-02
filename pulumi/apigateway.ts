@@ -1,6 +1,6 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
-import { userPool} from "./frontendauth"
+import { userPool} from "./amplify"
 
 // Create DynamoDB table
 const table = new aws.dynamodb.Table("app-table", {
@@ -140,6 +140,8 @@ const itemsResource = new aws.apigateway.Resource("items", {
     pathPart: "items",
 });
 
+
+
 // POST /items
 const createIntegration = new aws.apigateway.Integration("create-integration", {
     restApi: api.id,
@@ -154,7 +156,7 @@ const createIntegration = new aws.apigateway.Integration("create-integration", {
 );
 
 
-// GET /items/{id}
+// GET /item/{id}
 const itemResource = new aws.apigateway.Resource("item", {
     restApi: api.id,
     parentId: itemsResource.id,
@@ -219,6 +221,28 @@ const createMethod = new aws.apigateway.Method("create-method", {
     }
 });
 
+// Example for POST method (repeat similar pattern for other methods)
+const createMethodResponse = new aws.apigateway.MethodResponse("create-method-response", {
+    restApi: api.id,
+    resourceId: itemsResource.id,
+    httpMethod: "POST",
+    statusCode: "200",
+    responseParameters: {
+        "method.response.header.Access-Control-Allow-Origin": true,
+    },
+});
+
+const createIntegrationResponse = new aws.apigateway.IntegrationResponse("create-integration-response", {
+    restApi: api.id,
+    resourceId: itemsResource.id,
+    httpMethod: "POST",
+    statusCode: "200",
+    responseParameters: {
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+    },
+});
+
+
 const getMethod = new aws.apigateway.Method("get-method", {
     restApi: api.id,
     resourceId: itemResource.id,
@@ -231,6 +255,27 @@ const getMethod = new aws.apigateway.Method("get-method", {
     requestParameters: {
         "method.request.header.Authorization": true
     }
+});
+
+// Example for POST method (repeat similar pattern for other methods)
+const getMethodResponse = new aws.apigateway.MethodResponse("get-method-response", {
+    restApi: api.id,
+    resourceId: itemsResource.id,
+    httpMethod: "GET",
+    statusCode: "200",
+    responseParameters: {
+        "method.response.header.Access-Control-Allow-Origin": true,
+    },
+});
+
+const getIntegrationResponse = new aws.apigateway.IntegrationResponse("get-integration-response", {
+    restApi: api.id,
+    resourceId: itemsResource.id,
+    httpMethod: "GET",
+    statusCode: "200",
+    responseParameters: {
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+    },
 });
 
 const updateMethod = new aws.apigateway.Method("update-method", {
@@ -247,6 +292,28 @@ const updateMethod = new aws.apigateway.Method("update-method", {
     }
 });
 
+// Example for POST method (repeat similar pattern for other methods)
+const updateMethodResponse = new aws.apigateway.MethodResponse("update-method-response", {
+    restApi: api.id,
+    resourceId: itemsResource.id,
+    httpMethod: "PUT",
+    statusCode: "200",
+    responseParameters: {
+        "method.response.header.Access-Control-Allow-Origin": true,
+    },
+});
+
+const updateIntegrationResponse = new aws.apigateway.IntegrationResponse("update-integration-response", {
+    restApi: api.id,
+    resourceId: itemsResource.id,
+    httpMethod: "PUT",
+    statusCode: "200",
+    responseParameters: {
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+    },
+});
+
+
 const deleteMethod = new aws.apigateway.Method("delete-method", {
     restApi: api.id,
     resourceId: itemResource.id,
@@ -259,6 +326,27 @@ const deleteMethod = new aws.apigateway.Method("delete-method", {
     requestParameters: {
         "method.request.header.Authorization": true
     }
+});
+
+// Example for POST method (repeat similar pattern for other methods)
+const deleteMethodResponse = new aws.apigateway.MethodResponse("delete-method-response", {
+    restApi: api.id,
+    resourceId: itemsResource.id,
+    httpMethod: "DELETE",
+    statusCode: "200",
+    responseParameters: {
+        "method.response.header.Access-Control-Allow-Origin": true,
+    },
+});
+
+const deleteIntegrationResponse = new aws.apigateway.IntegrationResponse("delete-integration-response", {
+    restApi: api.id,
+    resourceId: itemsResource.id,
+    httpMethod: "DELETE",
+    statusCode: "200",
+    responseParameters: {
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+    },
 });
 
 // Update CORS options to include Authorization header
@@ -309,14 +397,64 @@ const corsIntegrationResponse = new aws.apigateway.IntegrationResponse("cors-int
     statusCode: "200",
     responseParameters: {
         "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
-        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE,OPTIONS'",
-        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE'",
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
     },
     responseTemplates: {
         "application/json": "",
     },
 },{
     dependsOn: [itemsResource]
+});
+
+// Add CORS for the /items resource
+const itemsResourceCors = new aws.apigateway.Method("items-cors-options", {
+    restApi: api.id,
+    resourceId: itemsResource.id,
+    httpMethod: "OPTIONS",
+    authorization: "NONE",
+    requestParameters: {
+        "method.request.header.Access-Control-Allow-Headers": true,
+        "method.request.header.Access-Control-Allow-Methods": true,
+        "method.request.header.Access-Control-Allow-Origin": true,
+    },
+});
+
+const itemsResourceCorsIntegration = new aws.apigateway.Integration("items-cors-integration", {
+    restApi: api.id,
+    resourceId: itemsResource.id,
+    httpMethod: "OPTIONS",
+    type: "MOCK",
+    requestTemplates: {
+        "application/json": `{"statusCode": 200}`
+    },
+});
+
+const itemsResourceCorsMethodResponse = new aws.apigateway.MethodResponse("items-cors-method-response", {
+    restApi: api.id,
+    resourceId: itemsResource.id,
+    httpMethod: "OPTIONS",
+    statusCode: "200",
+    responseParameters: {
+        "method.response.header.Access-Control-Allow-Headers": true,
+        "method.response.header.Access-Control-Allow-Methods": true,
+        "method.response.header.Access-Control-Allow-Origin": true,
+    },
+    responseModels: {
+        "application/json": "Empty",
+    },
+});
+
+const itemsResourceCorsIntegrationResponse = new aws.apigateway.IntegrationResponse("items-cors-integration-response", {
+    restApi: api.id,
+    resourceId: itemsResource.id,
+    httpMethod: "OPTIONS",
+    statusCode: "200",
+    responseParameters: {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST,GET,PUT,DELETE'",
+        "method.response.header.Access-Control-Allow-Origin": "'http://localhost:3000'",
+    },
 });
 
 // Deploy the API
@@ -331,6 +469,7 @@ const deployment = new aws.apigateway.Deployment("api-deployment", {
         corsIntegration,
         corsMethodResponse,
         corsIntegrationResponse,
+        itemsResourceCorsIntegrationResponse,
         createIntegration,
         getIntegration,
         deleteIntegration,

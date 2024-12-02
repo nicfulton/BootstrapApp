@@ -29,8 +29,7 @@ export class ApiService {
         path: `/items/${id}`,
         options: {
           headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin':'*'
+            'Content-Type': 'application/json'
           }
         }
       }).response;
@@ -49,8 +48,7 @@ export class ApiService {
         options: {
           body: item,
           headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin':'*'
+            'Content-Type': 'application/json'
           }
         }
       }).response;
@@ -69,8 +67,7 @@ export class ApiService {
         options: {
           body: item,
           headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin':'*'
+            'Content-Type': 'application/json'
           }
         }
       }).response;
@@ -88,8 +85,7 @@ export class ApiService {
         path: `/items/${id}`,
         options: {
           headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin':'*'
+            'Content-Type': 'application/json'
           }
         }
       }).response;

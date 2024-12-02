@@ -1,14 +1,22 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 
-import * as frontendauth from "./frontendauth"
-import * as endpoints from "./endpoints"
+import * as amplify from "./amplify"
+import * as apigateway from "./apigateway"
+import * as cognito from "./cognito"
+import * as lambda from "./lambda"
+import * as dynamodb from "./dynamodb"
+import * as apigateway_cors from "./apigateway_cors"
 
 import { EnvironmentWriter } from "./config/environment";
 
 const infra = {
-  frontendauth,
-  endpoints,
+  cognito,
+  dynamodb,
+  lambda,
+  apigateway,
+  amplify,
+  apigateway_cors
 }
 
 /*
@@ -20,11 +28,11 @@ REACT_APP_AWS_REGION="ap-southeast-2"
 
 // Configure environment variables
 const envConfig = {
-  USER_POOL_ID: infra.frontendauth.userPool.id,
-  USER_POOL_CLIENT_ID: infra.frontendauth.userPoolClient.id,
+  USER_POOL_ID: infra.cognito.userPool.id,
+  USER_POOL_CLIENT_ID: infra.cognito.userPoolClient.id,
   REGION: pulumi.output("ap-southeast-2"),
-  IDENTITY_POOL_ID: infra.frontendauth.identityPool.id,
-  API_GATEWAY_URL: infra.endpoints.apiUrl,//pulumi.interpolate`${api.executionArn}/*/`,
+  IDENTITY_POOL_ID: infra.cognito.identityPool.id,
+  API_GATEWAY_URL: infra.apigateway.apiUrl,//pulumi.interpolate`${api.executionArn}/*/`,
   STAGE_NAME: pulumi.output("dev"),
 };
 
