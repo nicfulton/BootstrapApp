@@ -2,6 +2,7 @@ import { Amplify } from 'aws-amplify';
 import { withAuthenticator } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 import amplifyConfig from './amplifyconfiguration';
+import { fetchUserAttributes } from '@aws-amplify/auth';
 
 // Material UI imports
 import AppNavbar from './AppNavbar';
@@ -12,7 +13,19 @@ import Typography from '@mui/material/Typography';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 
+import ItemManager from './components/ItemManager.tsx';
+
 Amplify.configure(amplifyConfig);
+// Function to print access token and id token
+const printUserAttributes = async () => {
+  try {
+    const userAttributes = await fetchUserAttributes();
+    const email = userAttributes.email;
+    const username= userAttributes['custom:FullName'];
+    console.log("User attributes:", email, username);
+  }
+  catch (e) { console.log(e); }
+};
 
 function App({ signOut, user }) {
   console.log(user);
@@ -27,6 +40,8 @@ function App({ signOut, user }) {
         <Typography variant="body1">
           You are signed in as {user.username}
         </Typography>
+        <button onClick={printUserAttributes}>Print Attributes</button>
+        <ItemManager />
       </Box>
     </Box>
   );

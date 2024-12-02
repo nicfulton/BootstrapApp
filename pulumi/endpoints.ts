@@ -129,7 +129,7 @@ const deleteItemFunction = new aws.lambda.Function("delete-item", {
 });
 
 // Create API Gateway
-const api = new aws.apigateway.RestApi("api", {
+export const api = new aws.apigateway.RestApi("api", {
     description: "API Gateway with Lambda and DynamoDB",
 });
 
@@ -190,7 +190,7 @@ const putIntegration = new aws.apigateway.Integration("put-integration", {
     httpMethod: "PUT",
     integrationHttpMethod: "POST",
     type: "AWS_PROXY",
-    uri: createItemFunction.invokeArn,
+    uri: updateItemFunction.invokeArn,
 },{
     dependsOn: [itemResource]
 });

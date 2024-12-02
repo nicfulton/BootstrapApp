@@ -67,7 +67,7 @@ export const userPool = new aws.cognito.UserPool("app-user-pool", {
 });
 
 // Create User Pool Client
-const userPoolClient = new aws.cognito.UserPoolClient("app-user-pool-client", {
+export const userPoolClient = new aws.cognito.UserPoolClient("app-user-pool-client", {
     userPoolId: userPool.id,
     // No client secret for browser-based apps
     generateSecret: false,
@@ -101,7 +101,7 @@ const userPoolClient = new aws.cognito.UserPoolClient("app-user-pool-client", {
 });
 
 // Create Identity Pool
-const identityPool = new aws.cognito.IdentityPool("app-identity-pool", {
+export const identityPool = new aws.cognito.IdentityPool("app-identity-pool", {
     identityPoolName: "app_identity_pool",
     allowUnauthenticatedIdentities: false,
     cognitoIdentityProviders: [{

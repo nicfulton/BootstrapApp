@@ -7,8 +7,18 @@ const amplifyConfig = {
             region: process.env.REACT_APP_AWS_REGION,
             signUpVerificationMethod: 'code'
         }
-    }
+    },
+    API: {
+        REST: {
+          api: {
+            endpoint: process.env.REACT_APP_API_URL,
+            region: process.env.REACT_APP_REGION,
+            defaultAuthMode: 'userPool'
+          }
+        }
+      }
 };
+
 
 console.log(amplifyConfig);
 
