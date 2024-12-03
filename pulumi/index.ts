@@ -32,7 +32,7 @@ const envConfig = {
   USER_POOL_CLIENT_ID: infra.cognito.userPoolClient.id,
   REGION: pulumi.output("ap-southeast-2"),
   IDENTITY_POOL_ID: infra.cognito.identityPool.id,
-  API_GATEWAY_URL: infra.apigateway.apiUrl,//pulumi.interpolate`${api.executionArn}/*/`,
+  API_URL: infra.apigateway.apiUrl,//pulumi.interpolate`${api.executionArn}/*/`,
   STAGE_NAME: pulumi.output("dev"),
 };
 
