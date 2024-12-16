@@ -107,7 +107,7 @@ export const identityPool = new aws.cognito.IdentityPool("app-identity-pool", {
 });
 
 // Create IAM roles for authenticated and unauthenticated users
-const authenticatedRole = new aws.iam.Role("authenticatedRole", {
+export const authenticatedRole = new aws.iam.Role("authenticatedRole", {
     assumeRolePolicy: {
         Version: "2012-10-17",
         Statement: [{

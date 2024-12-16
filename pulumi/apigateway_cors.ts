@@ -2,6 +2,7 @@ import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 import * as apigateway from "./apigateway"
 import * as amplify from "./amplify"
+import { TrustProvider } from "@pulumi/aws/verifiedaccess/trustProvider";
 
 
 const itemResource = apigateway.itemResourceObject;
@@ -12,13 +13,121 @@ const deleteIntegration = apigateway.deleteIntegration;
 const updateIntegration = apigateway.putIntegration;
 const api = apigateway.api;
 
+const env = pulumi.getStack();
+// ----------------------- CORS -----------------------
+export const corsResource = new aws.apigateway.Resource(
+    "cors",
+    {
+      restApi: api.id,
+      parentId: api.rootResourceId,
+      pathPart: "{cors+}",
+    },
 
-if(true){
+  );
+  export const corsMethod = new aws.apigateway.Method(
+    "cors",
+    {
+      restApi: api.id,
+      resourceId: corsResource.id,
+      httpMethod: "OPTIONS",
+      authorization: "NONE",
+      apiKeyRequired: false
+    },
+    
+  );
+  export const corsIntegration = new aws.apigateway.Integration(
+    "cors",
+    {
+      restApi: api.id,
+      resourceId: corsResource.id,
+      httpMethod: corsMethod.httpMethod,
+      type: "MOCK",
+      // passthroughBehavior: "NEVER",
+      requestTemplates: {
+        "application/json": `{"statusCode":200}`,
+      },
+    },
+
+  );
+  export const corsMethodResponse = new aws.apigateway.MethodResponse(
+    "cors",
+    {
+      restApi: api.id,
+      resourceId: corsResource.id,
+      httpMethod: corsMethod.httpMethod,
+      statusCode: "200",
+      responseParameters: {
+        "method.response.header.Access-Control-Allow-Origin": true,
+        "method.response.header.Access-Control-Allow-Methods": true,
+        "method.response.header.Access-Control-Allow-Headers": true,
+      },
+      responseModels: {
+        "application/json": "Empty",
+      },
+    },
+    { dependsOn: [corsMethod] }
+  );
+
+  export const corsIntegrationResponse = new aws.apigateway.IntegrationResponse(
+    "cors",
+    {
+      restApi: api.id,
+      resourceId: corsResource.id,
+      httpMethod: corsMethod.httpMethod,
+      statusCode: "200",
+      responseParameters: {
+        "method.response.header.Access-Control-Allow-Origin": `'$util.escapeJavaScript($input.params('Origin'))'`, // amplify.defaultDomain.apply(domain => `'http://localhost:3000, https://master.${domain}'`),
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization", //,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+        "method.response.header.Access-Control-Allow-Methods": "'GET, POST, PUT, DELETE, OPTIONS'", // Add more methods as needed
+      },
+      responseTemplates: {
+          "application/json": ""
+      }
+    },
+    { dependsOn: [corsIntegration, corsMethodResponse, api] }
+  );
+
+ export const defaultResponse4xx = new aws.apigateway.Response(
+    "response-4xx",
+    {
+      restApiId: api.id,
+      responseType: "DEFAULT_4XX",
+      responseTemplates: {
+        "application/json": "{'message':$context.error.messageString}",
+      },
+      responseParameters: {
+        "gatewayresponse.header.Access-Control-Allow-Origin": `'$util.escapeJavaScript($input.params('Origin'))'`, //amplify.defaultDomain.apply(domain => `'http://localhost:3000, https://master.${domain}'`),
+      },
+    },
+    { 
+        dependsOn: [amplify.app]
+     }
+  );
+  
+  export const defaultResponse5xx = new aws.apigateway.Response(
+    "response-5xx",
+    {
+      restApiId: api.id,
+      responseType: "DEFAULT_5XX",
+      responseTemplates: {
+        "application/json": "{'message':$context.error.messageString}",
+      },
+      responseParameters: {
+        "gatewayresponse.header.Access-Control-Allow-Origin": `'$util.escapeJavaScript($input.params('Origin'))'`, //amplify.defaultDomain.apply(domain => `'http://localhost:3000, https://master.${domain}'`),
+      },
+    },
+    { 
+        dependsOn: [amplify.app]
+     }
+  );
+
+
+if(TrustProvider){
 //const amplifyUrl = amplify.defaultDomain.apply(domain => `${domain}/dev`);
-// amplify.defaultDomain.apply(domain => `http://localhost:3000, https://${domain}/dev`)
+// amplify.defaultDomain.apply(domain => `http://localhost:3000, https://master.${domain}`)
 
 //const hostString = "'http://localhost:3000','"+amplifyUrl+"'";
-console.log("first",amplify.defaultDomain.apply(domain => `"http://localhost:3000, https://${domain}/dev"`));
+// console.log("first",amplify.defaultDomain.apply(domain => `"http://localhost:3000, https://master.${domain}"`));
 // CORS for create
 const createMethodResponse = new aws.apigateway.MethodResponse("create-method-response", {
     restApi: api.id,
@@ -38,7 +147,7 @@ const createIntegrationResponse = new aws.apigateway.IntegrationResponse("create
     httpMethod: "POST",
     statusCode: "200",
     responseParameters: {
-        "method.response.header.Access-Control-Allow-Origin": amplify.defaultDomain.apply(domain => `'http://localhost:3000, https://${domain}/dev'`),
+        "method.response.header.Access-Control-Allow-Origin": `'$util.escapeJavaScript($input.params('Origin'))'`, //amplify.defaultDomain.apply(domain => `'http://localhost:3000, https://master.${domain}'`),
     },
 },{
     dependsOn: [itemsResource,api]
@@ -63,7 +172,7 @@ const getIntegrationResponse = new aws.apigateway.IntegrationResponse("get-integ
     httpMethod: "GET",
     statusCode: "200",
     responseParameters: {
-        "method.response.header.Access-Control-Allow-Origin": amplify.defaultDomain.apply(domain => `'http://localhost:3000, https://${domain}/dev'`),
+        "method.response.header.Access-Control-Allow-Origin": `'$util.escapeJavaScript($input.params('Origin'))'`, //amplify.defaultDomain.apply(domain => `'http://localhost:3000, https://master.${domain}'`),
     },
 },{
     dependsOn: [itemsResource, api]
@@ -88,7 +197,7 @@ const updateIntegrationResponse = new aws.apigateway.IntegrationResponse("update
     httpMethod: "PUT",
     statusCode: "200",
     responseParameters: {
-        "method.response.header.Access-Control-Allow-Origin": amplify.defaultDomain.apply(domain => `'http://localhost:3000, https://${domain}/dev'`),
+        "method.response.header.Access-Control-Allow-Origin": `'$util.escapeJavaScript($input.params('Origin'))'`, //amplify.defaultDomain.apply(domain => `'http://localhost:3000, https://master.${domain}'`),
     },
 },{
     dependsOn: [itemsResource,api]
@@ -113,7 +222,7 @@ const deleteIntegrationResponse = new aws.apigateway.IntegrationResponse("delete
     httpMethod: "DELETE",
     statusCode: "200",
     responseParameters: {
-        "method.response.header.Access-Control-Allow-Origin": amplify.defaultDomain.apply(domain => `'http://localhost:3000, https://${domain}/dev'`),
+        "method.response.header.Access-Control-Allow-Origin": `'$util.escapeJavaScript($input.params('Origin'))'`, //amplify.defaultDomain.apply(domain => `'http://localhost:3000, https://master.${domain}'`),
     },
 },{
     dependsOn: [itemsResource,api]
@@ -170,7 +279,7 @@ const itemCorsIntegrationResponse = new aws.apigateway.IntegrationResponse("cors
     responseParameters: {
         "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
         "method.response.header.Access-Control-Allow-Methods": "'GET,POST,PUT,DELETE'",
-        "method.response.header.Access-Control-Allow-Origin": amplify.defaultDomain.apply(domain => `'http://localhost:3000, https://${domain}/dev'`),
+        "method.response.header.Access-Control-Allow-Origin": `'$util.escapeJavaScript($input.params('Origin'))'`, //amplify.defaultDomain.apply(domain => `'http://localhost:3000, https://master.${domain}'`),
     },
     responseTemplates: {
         "application/json": "",
@@ -231,7 +340,7 @@ const itemsCorsIntegrationResponse = new aws.apigateway.IntegrationResponse("ite
     responseParameters: {
         "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
         "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST,GET,PUT,DELETE'",
-        "method.response.header.Access-Control-Allow-Origin": amplify.defaultDomain.apply(domain => `'http://localhost:3000, https://${domain}/dev'`),
+        "method.response.header.Access-Control-Allow-Origin": `'$util.escapeJavaScript($input.params('Origin'))'`, //amplify.defaultDomain.apply(domain => `'http://localhost:3000, https://master.${domain}'`),
     },
 },{
     dependsOn: [itemsResource,api]

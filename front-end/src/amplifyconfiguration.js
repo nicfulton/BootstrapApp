@@ -5,7 +5,7 @@ const amplifyConfig = {
             userPoolClientId: process.env.REACT_APP_USER_POOL_CLIENT_ID,
             identitypoolid: process.env.REACT_APP_IDENTITY_POOL_ID,
             region: process.env.REACT_APP_AWS_REGION,
-            signUpVerificationMethod: 'code'
+            //signUpVerificationMethod: 'code'
         }
     },
     API: {
@@ -13,7 +13,8 @@ const amplifyConfig = {
           api: {
             endpoint: process.env.REACT_APP_API_URL,
             region: process.env.REACT_APP_REGION,
-            defaultAuthMode: 'userPool'
+            //defaultAuthMode: 'userPool',
+            defaultAuthMode: 'iam'
           }
         }
       }

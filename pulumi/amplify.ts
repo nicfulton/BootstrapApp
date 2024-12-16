@@ -13,7 +13,7 @@ const bucket = new aws.s3.BucketV2("my-bucket");
 console.log("GIIHUB", github);
 
 // Create a new Amplify app
-const app = new aws.amplify.App("react-app", {
+export const app = new aws.amplify.App("react-app", {
     name: "react-application",
     repository: "https://github.com/nicfulton/BootstrapApp",
 //    accessToken: process.env.GITHUB_ACCESS_TOKEN,
